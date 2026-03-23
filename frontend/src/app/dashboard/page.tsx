@@ -19,13 +19,13 @@ export default function DashboardPage() {
     // Fetch Trades directly from Supabase (Uploaded via CSV/AI)
     const { data: trades } = await supabase
       .from('trades')
-      .select('pnl, profit')
+      .select('pnl')
       .eq('user_id', user.uid);
 
     if (trades) {
       const totalTrades = trades.length;
-      const winningTrades = trades.filter(t => (t.profit || t.pnl) > 0).length;
-      const totalPnL = trades.reduce((sum, t) => sum + (t.profit || t.pnl || 0), 0);
+      const winningTrades = trades.filter(t => t.pnl > 0).length;
+      const totalPnL = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
       const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
 
       setStats({ totalPnL, winRate, totalTrades });

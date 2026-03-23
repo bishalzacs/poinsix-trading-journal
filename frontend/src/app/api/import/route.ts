@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.GEMINI_API_KEY) {
@@ -27,6 +24,8 @@ export async function POST(req: NextRequest) {
     console.log(`Processing ${file.name} (${mimeType}) using Gemini for user ${userId}`);
 
     // Call Gemini 1.5 Flash for fast multimodal extraction
+    // Initialize inside the function to prevent Vercel static build crashes
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert financial data extraction AI. Extract the exact trading history from the provided screenshot or statement text. Return the data as a precise JSON array of trades. 
