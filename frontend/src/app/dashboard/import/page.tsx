@@ -10,6 +10,7 @@ export default function ImportDataPage() {
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [statusText, setStatusText] = useState('');
+  const [parsedCount, setParsedCount] = useState(0);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -21,7 +22,50 @@ export default function ImportDataPage() {
     }
   }, []);
 
+  const processFile = async (file: File) => {
+    if (!file) return;
+    if (!user) {
+      setStatusText('Error: Must be logged in.');
+      return;
+    }
 
+    setUploading(true);
+    setSuccess(false);
+    
+    setStatusText('Uploading file to AI Vision Engine...');
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', user.uid);
+
+      setStatusText('Analyzing statement layout and data...');
+      
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setStatusText(`Error: ${result.message}`);
+        setUploading(false);
+        return;
+      }
+
+      setParsedCount(result.data?.length || 0);
+      setStatusText(`Parsed ${result.data?.length || 0} trades successfully!`);
+      await new Promise(r => setTimeout(r, 1000));
+      
+      setSuccess(true);
+    } catch (err: any) {
+      console.error(err);
+      setStatusText('Upload failed. Check network.');
+    } finally {
+      if (!success) setUploading(false);
+    }
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -31,7 +75,7 @@ export default function ImportDataPage() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
-  }, []);
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -86,7 +130,7 @@ export default function ImportDataPage() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">Import Successful!</h3>
                 <p className="text-zinc-400 text-center max-w-sm">
-                  We successfully extracted 142 trades from your statement. They are now visible in your dashboard.
+                  We successfully extracted {parsedCount} trades from your statement. They are now visible in your dashboard.
                 </p>
                 <button 
                   onClick={() => setSuccess(false)}
@@ -104,7 +148,7 @@ export default function ImportDataPage() {
                     <Sparkles className="w-6 h-6 text-amber-500 animate-pulse" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{statusText}</h3>
+                <h3 className="text-xl font-bold text-white mb-2 text-center">{statusText}</h3>
                 <p className="text-zinc-500 text-sm">Please keep this window open</p>
               </div>
             ) : (
