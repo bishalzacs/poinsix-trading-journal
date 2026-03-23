@@ -4,29 +4,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { useAuth } from '@/components/AuthProvider';
 import { EquityChart } from '@/components/EquityChart';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, UploadCloud, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ totalPnL: 0, winRate: 0, totalTrades: 0 });
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [account, setAccount] = useState<any>(null);
 
   const fetchStats = async () => {
     if (!user) return;
     setLoading(true);
-    
-    // Fetch MT5 Account
-    const { data: accounts } = await supabase
-      .from('trading_accounts')
-      .select('*')
-      .eq('user_id', user.uid)
-      .limit(1);
-    
-    if (accounts?.[0]) setAccount(accounts[0]);
 
-    // Fetch Trades
+    // Fetch Trades directly from Supabase (Uploaded via CSV/AI)
     const { data: trades } = await supabase
       .from('trades')
       .select('pnl, profit')
@@ -47,25 +37,6 @@ export default function DashboardPage() {
     fetchStats();
   }, [user]);
 
-  const handleSync = async () => {
-    if (!user || !account) return;
-    setSyncing(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sync-trades`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.uid, account_id: account.id })
-      });
-      if (response.ok) {
-        await fetchStats();
-      }
-    } catch (err) {
-      console.error('Sync failed:', err);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   if (loading) return <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
 
   return (
@@ -73,24 +44,26 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Overview</h1>
-          {account && <p className="text-sm text-zinc-400 mt-1">MT5: {account.mt5_login} ({account.mt5_server})</p>}
         </div>
         
-        {account ? (
-          <button 
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg font-medium transition-colors"
-          >
-            {syncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Sync MT5 History'}
-          </button>
-        ) : (
-          <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-lg text-sm">
-            <AlertCircle className="w-4 h-4" />
-            Connect MT5 in Settings
-          </div>
-        )}
+        <Link 
+          href="/dashboard/import"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
+        >
+          <UploadCloud className="w-4 h-4" />
+          Import Trades
+        </Link>
       </div>
+
+      {stats.totalTrades === 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 flex items-center justify-between group cursor-pointer hover:bg-amber-500/20 transition-colors" onClick={() => window.location.href='/dashboard/import'}>
+          <div>
+            <h3 className="text-amber-500 font-bold text-lg mb-1">Your journal is empty!</h3>
+            <p className="text-amber-500/80 text-sm">Upload a CSV, PDF, or screenshot of your broker statement to generate your analytics.</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-amber-500 group-hover:translate-x-1 transition-transform" />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">

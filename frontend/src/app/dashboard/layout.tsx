@@ -1,11 +1,11 @@
 "use client";
 
 import Link from 'next/link'
-import { LayoutDashboard, LogOut, Settings, List, Loader2 } from 'lucide-react'
+import { LayoutDashboard, LogOut, Settings, List, Loader2, UploadCloud } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/utils/firebase'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export default function DashboardLayout({
   children,
@@ -14,6 +14,7 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   if (loading) {
     return (
@@ -23,13 +24,19 @@ export default function DashboardLayout({
     );
   }
 
-  // Double check user presence (Provider handles redirect but extra safety)
   if (!user) return null;
 
   const handleSignOut = async () => {
     await signOut(auth);
     router.push('/');
   };
+
+  const navItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: 'text-blue-400' },
+    { name: 'Trades', href: '/dashboard/trades', icon: List, color: 'text-emerald-400' },
+    { name: 'Import Data', href: '/dashboard/import', icon: UploadCloud, color: 'text-amber-400' },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings, color: 'text-purple-400' },
+  ];
 
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
@@ -41,18 +48,22 @@ export default function DashboardLayout({
         </div>
         
         <nav className="flex-1 px-4 space-y-2">
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-md bg-zinc-800 text-white transition-colors">
-            <LayoutDashboard className="w-5 h-5 text-blue-400" />
-            Dashboard
-          </Link>
-          <Link href="/dashboard/trades" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-zinc-800/50 text-zinc-300 hover:text-white transition-colors">
-            <List className="w-5 h-5 text-emerald-400" />
-            Trades
-          </Link>
-          <Link href="/dashboard/settings" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-zinc-800/50 text-zinc-300 hover:text-white transition-colors">
-            <Settings className="w-5 h-5 text-purple-400" />
-            Settings
-          </Link>
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link 
+                key={item.href}
+                href={item.href} 
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                  isActive ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800/50 text-zinc-300 hover:text-white'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${item.color}`} />
+                {item.name}
+              </Link>
+            )
+          })}
         </nav>
         
         <div className="p-4 border-t border-zinc-800">
