@@ -1,11 +1,36 @@
+"use client";
+
 import Link from 'next/link'
-import { LayoutDashboard, LogOut, Settings, List } from 'lucide-react'
+import { LayoutDashboard, LogOut, Settings, List, Loader2 } from 'lucide-react'
+import { useAuth } from '@/components/AuthProvider'
+import { signOut } from 'firebase/auth'
+import { auth } from '@/utils/firebase'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  if (loading) {
+    return (
+      <div className="h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // Double check user presence (Provider handles redirect but extra safety)
+  if (!user) return null;
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Sidebar */}
@@ -32,16 +57,26 @@ export default function DashboardLayout({
         
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-              <span className="text-xs font-medium text-white">D</span>
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-medium text-white">
+                  {user.email?.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">Demo User</p>
+              <p className="text-xs font-medium text-zinc-400 truncate">Logged in as</p>
+              <p className="text-sm font-semibold text-white truncate">{user.email}</p>
             </div>
           </div>
           
-          <button className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 transition-colors">
-            <LogOut className="w-4 h-4" />
+          <button 
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 transition-colors group"
+          >
+            <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Sign out
           </button>
         </div>
