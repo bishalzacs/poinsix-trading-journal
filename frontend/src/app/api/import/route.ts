@@ -42,16 +42,7 @@ export async function POST(req: NextRequest) {
     
     IMPORTANT: Respond ONLY with a valid JSON array. Do not include markdown formatting like \`\`\`json. Just the raw array starting with [ and ending with ].`;
 
-    const imageParts = [
-      {
-        inlineData: {
-          data: buffer.toString("base64"),
-          mimeType
-        }
-      }
-    ];
 
-    const result = await model.generateContent([prompt, ...imageParts]);
     const aiContent = result.response.text();
     let extractedTrades: any[] = [];
     

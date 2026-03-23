@@ -4,12 +4,25 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/utils/supabaseClient';
 import { useAuth } from '@/components/AuthProvider';
-import { Loader2, PlusCircle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Loader2, PlusCircle, ArrowUpRight, ArrowDownRight, Edit2, Trash2 } from 'lucide-react';
 
 export default function TradesPage() {
   const { user } = useAuth();
   const [trades, setTrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleDelete = async (tradeId: string) => {
+    if (!window.confirm('Are you sure you want to delete this trade?')) return;
+    
+    try {
+      const { error } = await supabase.from('trades').delete().eq('id', tradeId);
+      if (error) throw error;
+      setTrades(prev => prev.filter(t => t.id !== tradeId));
+    } catch (err: any) {
+      console.error('Failed to delete trade:', err);
+      alert('Failed to delete trade.');
+    }
+  };
 
   useEffect(() => {
     const fetchTrades = async () => {
@@ -64,12 +77,13 @@ export default function TradesPage() {
                 <th className="px-6 py-4 text-right">Amount ($)</th>
                 <th className="px-6 py-4 text-right">Pips</th>
                 <th className="px-6 py-4">2 Trade Rule</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {trades.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-zinc-500">
+                  <td colSpan={11} className="px-6 py-12 text-center text-zinc-500">
                     No trades logged yet. Click "Log Trade" or "Import Data" to begin.
                   </td>
                 </tr>
@@ -127,6 +141,16 @@ export default function TradesPage() {
                         }`}>
                           {trade.rules_followed || '-'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/dashboard/edit/${trade.id}`} className="text-zinc-500 hover:text-blue-400 transition-colors p-1">
+                            <Edit2 className="w-4 h-4" />
+                          </Link>
+                          <button onClick={() => handleDelete(trade.id)} className="text-zinc-500 hover:text-red-400 transition-colors p-1">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
