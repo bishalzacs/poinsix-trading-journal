@@ -54,11 +54,7 @@ export default function ImportDataPage() {
         return;
       }
 
-      setParsedCount(result.data?.length || 0);
-      setStatusText(`Parsed ${result.data?.length || 0} trades successfully!`);
-      await new Promise(r => setTimeout(r, 1000));
-      
-      setSuccess(true);
+
     } catch (err: any) {
       console.error(err);
       setStatusText('Upload failed. Check network.');
