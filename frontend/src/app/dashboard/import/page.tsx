@@ -21,28 +21,7 @@ export default function ImportDataPage() {
     }
   }, []);
 
-  const processFile = async (file: File) => {
-    if (!file) return;
-    setUploading(true);
-    setSuccess(false);
-    
-    // Simulate processing
-    setStatusText('Analyzing file structure...');
-    await new Promise(r => setTimeout(r, 1000));
-    
-    if (file.type.includes('pdf') || file.type.includes('image')) {
-      setStatusText('Running AI Vision extraction on statement...');
-    } else {
-      setStatusText('Parsing CSV tabular data...');
-    }
-    await new Promise(r => setTimeout(r, 2000));
-    
-    setStatusText('Mapping 142 trades to journal...');
-    await new Promise(r => setTimeout(r, 1500));
-    
-    setUploading(false);
-    setSuccess(true);
-  };
+
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
