@@ -1,20 +1,11 @@
 import Link from 'next/link'
 import { LayoutDashboard, LogOut, Settings, List } from 'lucide-react'
-import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/auth/login')
-  }
-
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Sidebar */}
@@ -42,19 +33,17 @@ export default async function DashboardLayout({
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center gap-3 mb-4 px-2">
             <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
-              <span className="text-xs font-medium text-white">{user.email?.charAt(0).toUpperCase()}</span>
+              <span className="text-xs font-medium text-white">D</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user.email}</p>
+              <p className="text-sm font-medium text-white truncate">Demo User</p>
             </div>
           </div>
           
-          <form action="/auth/signout" method="post">
-            <button className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 transition-colors">
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </button>
-          </form>
+          <button className="flex w-full items-center gap-3 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 transition-colors">
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </button>
         </div>
       </aside>
 
