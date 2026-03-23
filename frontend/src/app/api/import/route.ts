@@ -42,7 +42,24 @@ export async function POST(req: NextRequest) {
     
     IMPORTANT: Respond ONLY with a valid JSON array. Do not include markdown formatting like \`\`\`json. Just the raw array starting with [ and ending with ].`;
 
+    let imageParts: any[] = [];
+    let finalPrompt = prompt;
 
+    if (mimeType.includes('text') || mimeType.includes('csv')) {
+      const textData = buffer.toString('utf-8');
+      finalPrompt += `\n\nHere is the text/CSV data to analyze:\n${textData}`;
+    } else {
+      imageParts = [
+        {
+          inlineData: {
+            data: buffer.toString("base64"),
+            mimeType
+          }
+        }
+      ];
+    }
+
+    const result = await model.generateContent([finalPrompt, ...imageParts]);
     const aiContent = result.response.text();
     let extractedTrades: any[] = [];
     

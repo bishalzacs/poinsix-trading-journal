@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { UploadCloud, FileText, Image as ImageIcon, FileSpreadsheet, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/utils/supabaseClient';
 
 export default function ImportDataPage() {
   const { user } = useAuth();
@@ -54,6 +55,31 @@ export default function ImportDataPage() {
         return;
       }
 
+      setParsedCount(result.data?.length || 0);
+      setStatusText(`Parsed ${result.data?.length || 0} trades! Saving to database...`);
+      
+      if (result.data && result.data.length > 0) {
+        
+        const tradesToInsert = result.data.map((t: any) => ({
+          user_id: user.uid,
+          symbol: t.symbol || 'UNKNOWN',
+          trade_type: (t.type || 'BUY').toUpperCase(),
+          position_size: parseFloat(t.volume || '0') || 0,
+          pnl: parseFloat(t.profit || '0') || 0,
+          opened_at: t.open_time ? new Date(t.open_time).toISOString() : new Date().toISOString(),
+          closed_at: t.close_time ? new Date(t.close_time).toISOString() : new Date().toISOString(),
+          session: 'Imported AI',
+          sl_used: 'UNKNOWN',
+          pips: 0,
+          rules_followed: 'followed',
+          reason: 'Auto-extracted by AI Vision'
+        }));
+
+        const { error } = await supabase.from('trades').insert(tradesToInsert);
+        if (error) throw error;
+      }
+
+      setSuccess(true);
 
     } catch (err: any) {
       console.error(err);
