@@ -23,10 +23,8 @@ export async function POST(req: NextRequest) {
 
     console.log(`Processing ${file.name} (${mimeType}) using Gemini for user ${userId}`);
 
-    // Call Gemini 1.5 Flash for fast multimodal extraction
-    // Initialize inside the function to prevent Vercel static build crashes
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `You are an expert financial data extraction AI. Extract the exact trading history from the provided screenshot or statement text. Return the data as a precise JSON array of trades. 
     Each trade must include exactly these fields:
@@ -58,13 +56,14 @@ export async function POST(req: NextRequest) {
       ];
     }
 
-    const result = await model.generateContent([finalPrompt, ...imageParts]);
+    const payload = imageParts.length > 0 ? [finalPrompt, ...imageParts] : [finalPrompt];
+    const result = await model.generateContent(payload);
+    
     const aiContent = result.response.text();
     let extractedTrades: any[] = [];
     
     try {
       if (aiContent) {
-         // Clean up potential markdown formatting that Gemini might forcefully add
          let cleanContent = aiContent.trim();
          if (cleanContent.startsWith('```json')) {
              cleanContent = cleanContent.replace(/^```json/, '').replace(/```$/, '').trim();
