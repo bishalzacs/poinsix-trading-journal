@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
@@ -13,6 +14,14 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Poinsix MT5 Sync API", version="2.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins, adjust in strictly production if needed
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class MT5AccountRequest(BaseModel):
     user_id: str
