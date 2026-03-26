@@ -44,6 +44,7 @@ export default function AddTradePage() {
       const tradeData = {
         user_id: user.uid,
         symbol: formData.symbol.toUpperCase(),
+        broker_name: 'Manual', // Added to match schema requirements
         trade_type: formData.trade_type,
         position_size: parseFloat(formData.position_size) || 0,
         pnl: pnlNum || 0,
