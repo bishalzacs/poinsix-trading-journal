@@ -24,20 +24,20 @@ export async function POST(req: NextRequest) {
     console.log(`Processing ${file.name} (${mimeType}) using Gemini for user ${userId}`);
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `You are an expert financial data extraction AI. Extract the exact trading history from the provided screenshot or statement text. Return the data as a precise JSON array of trades. 
     Each trade must include exactly these fields:
-    - symbol (string)
+    - symbol (string, e.g. "XAUUSD")
     - entry_price (number)
     - exit_price (number)
     - type ('BUY' or 'SELL')
-    - volume (number)
+    - volume (number, lot size)
     - open_time (ISO string date)
     - close_time (ISO string date)
-    - profit (number)
+    - profit (number, in currency)
     
-    IMPORTANT: Respond ONLY with a valid JSON array. Do not include markdown formatting like \`\`\`json. Just the raw array starting with [ and ending with ].`;
+    IMPORTANT: Respond ONLY with a valid JSON array. Do not include any text or markdown formatting outside the array.`;
 
     let imageParts: any[] = [];
     let finalPrompt = prompt;
@@ -64,19 +64,27 @@ export async function POST(req: NextRequest) {
     
     try {
       if (aiContent) {
+         // More robust JSON cleaning
          let cleanContent = aiContent.trim();
-         if (cleanContent.startsWith('```json')) {
-             cleanContent = cleanContent.replace(/^```json/, '').replace(/```$/, '').trim();
+         
+         // Remove markdown code blocks if present
+         if (cleanContent.includes('```')) {
+           const match = cleanContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+           if (match) {
+             cleanContent = match[1];
+           }
          }
          
          const parsed = JSON.parse(cleanContent);
-         extractedTrades = parsed.trades || parsed;
-         if (!Array.isArray(extractedTrades)) extractedTrades = [];
+         extractedTrades = Array.isArray(parsed) ? parsed : (parsed.trades || []);
       }
     } catch (e) {
-      console.error("Failed to parse AI output:", e);
-      console.log("Raw output was:", aiContent);
-      return NextResponse.json({ message: 'Failed to extract structured data from statement.' }, { status: 500 });
+      console.error("AI Parse Error:", e);
+      console.log("Raw content was:", aiContent);
+      return NextResponse.json({ 
+        message: 'Failed to extract structured data. AI output was: ' + aiContent.substring(0, 100),
+        raw: aiContent 
+      }, { status: 500 });
     }
 
     return NextResponse.json({ 

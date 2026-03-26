@@ -23,11 +23,30 @@ export default function AddTradePage() {
     pnl: '',
     pips: '',
     reason: '',
-    rules_followed: 'followed'
+    rules_followed: 'YES' // Changed from 'followed'
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      
+      // Auto-calculate Pips if Profit or Lot Size changes
+      if (name === 'pnl' || name === 'position_size') {
+        const pnl = parseFloat(name === 'pnl' ? value : prev.pnl);
+        const lots = parseFloat(name === 'position_size' ? value : prev.position_size);
+        
+        if (!isNaN(pnl) && !isNaN(lots) && lots > 0) {
+          // Standard Calculation: 0.01 lot = $0.10 per pip
+          // Pips = Profit / (Lots * 10)
+          const calculatedPips = Math.round(Math.abs(pnl) / (lots * 10));
+          newData.pips = calculatedPips.toString();
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,23 +58,21 @@ export default function AddTradePage() {
 
     try {
       const pnlNum = parseFloat(formData.pnl);
-      const isWin = pnlNum > 0;
       
       const tradeData = {
         user_id: user.uid,
         symbol: formData.symbol.toUpperCase(),
-        broker_name: 'Manual', // Added to match schema requirements
+        broker_name: 'Manual',
         trade_type: formData.trade_type,
         position_size: parseFloat(formData.position_size) || 0,
         pnl: pnlNum || 0,
         opened_at: new Date(formData.opened_at).toISOString(),
-        closed_at: new Date(formData.opened_at).toISOString(), // Fallback for manual
+        closed_at: new Date(formData.opened_at).toISOString(),
         
-        // Custom Manual Fields
         session: formData.session,
         sl_used: formData.sl_used,
         pips: parseFloat(formData.pips) || 0,
-        rules_followed: formData.rules_followed,
+        rules_followed: formData.rules_followed === 'YES' ? 'followed' : 'not followed',
         reason: formData.reason
       };
 
@@ -167,15 +184,15 @@ export default function AddTradePage() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">2 Trades/Day Rule</label>
+            <label className="text-sm font-medium text-zinc-300">Followed Your Rules?</label>
             <select 
               name="rules_followed"
               value={formData.rules_followed}
               onChange={handleChange}
-              className={`w-full border rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium ${formData.rules_followed === 'followed' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}
+              className={`w-full border rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium ${formData.rules_followed === 'YES' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}
             >
-              <option value="followed">Followed</option>
-              <option value="not followed">Not Followed</option>
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
             </select>
           </div>
         </div>
@@ -199,17 +216,49 @@ export default function AddTradePage() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Pips / Points Captured</label>
+            <label className="text-sm font-medium text-zinc-300">Pips Captured (Auto)</label>
             <input 
               type="number" 
               name="pips"
               required
-              placeholder="43"
+              placeholder="0"
               value={formData.pips}
               onChange={handleChange}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none bg-blue-500/5"
             />
           </div>
+        </div>
+
+        {/* Row 4 */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-300">Reason / Notes</label>
+          <textarea 
+            name="reason"
+            placeholder="e.g., Good market direction and entry, SL hunt with wick, FOMO..."
+            rows={3}
+            value={formData.reason}
+            onChange={handleChange}
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+          />
+        </div>
+
+        <div className="pt-4 flex items-center justify-end gap-4 border-t border-zinc-800">
+          <button 
+            type="button" 
+            onClick={() => router.back()}
+            className="px-6 py-2.5 rounded-lg text-zinc-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white rounded-lg font-medium transition-colors"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 
+             success ? <CheckCircle className="w-5 h-5 text-emerald-400" /> : 'Save Trade'}
+          </button>
         </div>
 
         {/* Row 4 */}
