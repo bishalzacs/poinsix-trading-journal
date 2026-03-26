@@ -63,6 +63,7 @@ export default function ImportDataPage() {
         const tradesToInsert = result.data.map((t: any) => ({
           user_id: user.uid,
           symbol: t.symbol || 'UNKNOWN',
+          broker_name: 'AI Vision', // Added to match schema requirements
           trade_type: (t.type || 'BUY').toUpperCase(),
           position_size: parseFloat(t.volume || '0') || 0,
           pnl: parseFloat(t.profit || '0') || 0,
